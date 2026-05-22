@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang='zh-TW'>
+<head>
+<meta charset='UTF-8'>
+<title>終極評語系統（校務版）</title>
+<style>
+body{font-family:Arial;padding:20px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #aaa;padding:6px;text-align:center}
+textarea{width:100%;height:120px}
+button{margin:8px;padding:10px}
+.output{white-space:pre-line;margin-top:20px}
+</style>
+</head>
+<body>
+<h2>終極評語系統（校務系統等級）</h2>
+
+<p>貼上學生名單（每行一個）</p>
+<textarea id='names'></textarea><br>
+<button onclick='build()'>建立評量表</button>
+<div id='table'></div>
+<button onclick='generate()'>產生評語</button>
+<button onclick='downloadTXT()'>下載TXT</button>
+<button onclick='downloadCSV()'>匯出Excel</button>
+<div class='output' id='output'></div>
+
+<script>
+
+const aspects=["學習態度","課堂專注","作業表現","學習動機","理解能力","表達能力","合作學習","人際關係","自我管理","學習成果"];
+
+function build(){
+ let names=document.getElementById('names').value.split("
+");
+ let html="<table><tr><th>姓名</th>";
+ aspects.forEach(a=>html+="<th>"+a+"</th>");
+ html+="</tr>";
+ names.forEach((n,i)=>{
+  if(!n.trim())return;
+  html+="<tr><td>"+n.slice(-2)+"</td>";
+  for(let j=0;j<10;j++){
+    html+="<td><select id='s_"+i+"_"+j+"'><option value=3>優</option><option value=2>中</option><option value=1>弱</option></select></td>";
+  }
+  html+="</tr>";
+ });
+ html+="</table>";
+ document.getElementById('table').innerHTML=html;
+}
+
+function r(a){return a[Math.floor(Math.random()*a.length)]}
+
+const bank={
+0:{3:["學習態度積極主動，能主動參與學習","展現高度學習熱忱"],2:["學習態度穩定，能配合學習進度"],1:["學習態度需加強，建議提升主動性"]},
+1:{3:["上課專注且能掌握重點"],2:["專注力尚可，偶有分心"],1:["專注力需提升，易分心"]},
+2:{3:["作業完成品質良好且準時"],2:["作業大致完成"],1:["作業完成度有待加強"]},
+3:{3:["學習動機強烈"],2:["學習動機普通"],1:["學習動機不足"]},
+4:{3:["理解能力佳，能有效掌握內容"],2:["理解能力尚可"],1:["理解能力需加強"]},
+5:{3:["表達清楚且具條理"],2:["表達能力尚可"],1:["表達能力需提升"]},
+6:{3:["能主動參與合作並完成任務"],2:["合作表現尚可"],1:["合作參與度不足"]},
+7:{3:["與同儕互動良好"],2:["人際關係穩定"],1:["人際互動需改善"]},
+8:{3:["具備良好自我管理能力"],2:["自我管理尚可"],1:["自我管理需加強"]},
+9:{3:["學習成果表現優異"],2:["整體表現穩定"],1:["學習成果需努力"]}
+};
+
+function generate(){
+ let names=document.getElementById('names').value.split("
+");
+ let out="";
+ names.forEach((n,i)=>{
+  if(!n.trim())return;
+  let name=n.slice(-2);
+  let total=0;
+  let parts=[];
+
+  for(let j=0;j<10;j++){
+    let v=parseInt(document.getElementById('s_'+i+'_'+j).value);
+    total+=v;
+    parts.push(r(bank[j][v]));
+  }
+
+  let avg=total/10;
+  let end;
+
+  if(avg>=2.5){
+    end=r(["整體表現優異，值得肯定，持續保持","各方面發展良好，潛力可期"]);
+  }else if(avg>=1.8){
+    end=r(["整體表現穩定，持續努力可更進步","學習逐步提升，仍有成長空間"]);
+  }else{
+    end=r(["整體仍有進步空間，建議建立良好學習習慣","需持續努力，逐步提升學習表現"]);
+  }
+
+  let sentence=name+parts.join("，")+"，"+end+"。";
+
+  // 限制長度（校務系統常用150字左右）
+  if(sentence.length>120){sentence=sentence.substring(0,120)+"..."}
+
+  out+=sentence+"
+
+";
+ });
+
+ document.getElementById('output').innerText=out;
+}
+
+function downloadTXT(){
+ let blob=new Blob([output.innerText],{type:'text/plain'});
+ let a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download='評語.txt';
+ a.click();
+}
+
+function downloadCSV(){
+ let rows=output.innerText.trim().split("
+
+");
+ let csv="姓名,評語
+";
+ rows.forEach(r=>csv+=r.slice(0,2)+","+r+"
+");
+ let blob=new Blob([csv],{type:'text/csv'});
+ let a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download='評語.csv';
+ a.click();
+}
+
+</script>
+
+</body>
+</html>
